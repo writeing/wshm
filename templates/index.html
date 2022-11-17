@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ch">
+
+<head>
+    <meta charset="utf-8">
+    <title>{{ name }}'s Watchlist</title>
+</head>
+
+<body>
+    <h2>{{ name }}'s Watchlist</h2>
+    {# 使用 length 过滤器获取 movies 变量的长度 #}
+    <p>{{ movies|length }} Titles</p>
+    <ul>
+        {% for title in movies['title'] %} {# 迭代 movies 变量 #}
+        <li>{{ title }}</li> {# 等同于 movie['title'] #}
+        {% endfor %} {# 使用 endfor 标签结束 for 语句 #}
+        {% for dpic in movies['dpic'] %} {# 迭代 movies 变量 #}
+        <img alt="Avatar" src="{{ url_for('static', filename='dpic/' + dpic ) }}">
+        {% endfor %} {# 使用 endfor 标签结束 for 语句 #}
+
+
+    </ul>
+    <footer>
+        <small>&copy; 2018 <a href="http://helloflask.com/book/3">HelloFlask</a></small>
+    </footer>
+</body>
+
+</html>
