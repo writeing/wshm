@@ -3,64 +3,25 @@
 
 <head>
     <meta charset="utf-8">
-    <title>{{ direct }}:{{ name }} </title>
+    <title>{{ item }} </title>
 </head>
 
-<body>
-    <h2>{{ name }}'s Watchlist</h2>
-    {# 使用 length 过滤器获取 movies 变量的长度 #}
-    <p>{{ movies|length }} Titles</p>
+<body align="center">
+    <h2>{{ item }}</h2>
 
-
-    <form action="" method="POST">
-        <input type=submit value='更新dpic' name="dpic">
-        <input type=submit value='更新title' name="title">
-        <input type=submit value='更新主页面' name="root">
-   </form>
-    <form action="" method="POST">
-        <input type=submit value= "week" name= "week"></br>
-        {% for year in historyList %}
-        <input type=submit value= {{year}} name= {{year}}></br>
-        {% endfor %} 
-    </form>
-    <div class="box">
+    <p>{{ allItems | length }} Titles</p>
+    <img width="160px" height="240px" alt="" src="{{ url_for('static', filename='dpic/' + direct + '/' + item + '.png') }}">
         <ul>
-            {% for item in movies.keys() %}
+            {% for ll in allItems %}
             <li>
-                <a href="/wshm/{{ direct }}/{{ item }}" >
-                <img width="160px" height="240px" alt="" src="{{ url_for('static', filename='dpic/' + direct + '/' + movies[item]) }}">
-                </a>
-                <div class="deatil">
-                <p><a href="/wshm/{{ direct }}/{{ item }}">{{ item }}</a></p>  
-                </div>
+                <p><a href="/wshm/img/{{direct}}/{{item}}/{{loop.index}}/{{ll}}" >{{ ll }}</a></p> 
             </li> 
             {% endfor %} 
         </ul>
-    </div>
     <footer>
-        <small>&copy; 2018 <a href="http://helloflask.com/book/3">HelloFlask</a></small>
+        <small>&copy; 2022 <a href="http://helloflask.com/book/3">HelloFlask</a></small>
     </footer>
 </body>
-<script type="text/javascript">
-    function update(parm)
-    {
-        $.ajax(
-       {
-          type: "POST",
-          url: "/wshm" + parm,
-          dataType: "html",
-        //   success: function(msg)
-        //   {
-        //       console.log(msg);
-        //       $("#display").html(msg);//注意显示的id
-        //   },
-        //   error: function (xhr, status, error) {
-        //      console.log(error);
-        //  }
-       });
-    }
- </script>
-
 <style>
 @charset "utf-8";
 /* CSS Document */
@@ -71,6 +32,9 @@
 body{
     font-family:"微软雅黑";
     background-color:#ddd;
+    margin: 0 auto;
+    width: 600px;
+    /* height: 30000px; */
 }
 .box{
     width:1800px;

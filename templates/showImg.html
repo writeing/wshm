@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ch">
+
+<head>
+    <meta charset="utf-8">
+    <title>{{ name }} </title>
+</head>
+
+<body>
+    <h2>{{ name }} :{{itemName}}</h2>
+    <p>{{ imgList | length }} Titles</p>
+
+    
+        <div width="1000px" align="center">       
+        {% for ll in imgList %}
+            
+            <img width="950px" src="{{ url_for('static', filename='images/' + direct + '/' + name + '/' + num + '/' + ll ) }}" alt="">         
+        {% endfor %}   
+        
+        </div> 
+
+        <p><a href="/wshm/up/{{direct}}/{{ name }}/{{ num }}" >上一页</a></p>
+        <p><a href="/wshm/down/{{direct}}/{{ name }}/{{ num }}" >下一页</a></p>
+    <footer>
+        <small>&copy; 2022 <a href="http://helloflask.com/book/3">HelloFlask</a></small>
+    </footer>
+</body>
+<style>
+body{
+    font-family:"微软雅黑";
+    background-color:#ddd;
+    margin: 0 auto;
+    width: 1000px;
+    height: 30000px;
+}
+</style>
+</html>
