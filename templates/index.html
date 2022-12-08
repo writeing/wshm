@@ -10,33 +10,37 @@
     <h2>{{ name }}'s Watchlist</h2>
     {# 使用 length 过滤器获取 movies 变量的长度 #}
     <p>{{ movies|length }} Titles</p>
-
-
-    <form action="" method="POST">
-        <input type=submit value='更新dpic' name="dpic">
-        <input type=submit value='更新title' name="title">
-        <input type=submit value='更新主页面' name="root">
-   </form>
-    <form action="" method="POST">
-        <input type=submit value= "week" name= "week"></br>
-        {% for year in historyList %}
-        <input type=submit value= {{year}} name= {{year}}></br>
-        {% endfor %} 
-    </form>
+    <div class="input_center"> 
+        <form action="" method="POST">
+            <input type=submit value='更新dpic' name="dpic">
+            <input type=submit value='更新title' name="title">
+            <input type=submit value='更新主页面' name="root">
+        </form>
+    </div>
+    <div class="input_center">
+        <form action="" method="POST">
+            <input type=submit value= "week" name= "week">
+            {% for year in historyList %}
+            <input type=submit value= {{year}} name= {{year}}>
+            {% endfor %} 
+        </form>
+    </div>
     <div class="box">
         <ul>
             {% for item in movies.keys() %}
-            <li>
+            <li >                
                 <a href="/wshm/{{ direct }}/{{ item }}" >
-                <img width="160px" height="240px" alt="" src="{{ url_for('static', filename='dpic/' + direct + '/' + movies[item]) }}">
+                <img width="160px" height="240px" alt="" src="{{ url_for('static', filename='dpic/' + direct + '/' + movies[item]) }}" >
                 </a>
-                <div class="deatil">
-                <p><a href="/wshm/{{ direct }}/{{ item }}">{{ item }}</a></p>  
+                <div class="deatil" >
+                <p><a href="/wshm/{{ direct }}/{{ item }}" >{{ item }}</a></p> 
                 </div>
             </li> 
             {% endfor %} 
         </ul>
     </div>
+    </br>
+    </br>
     <footer>
         <small>&copy; 2018 <a href="http://helloflask.com/book/3">HelloFlask</a></small>
     </footer>
@@ -58,7 +62,12 @@
         //      console.log(error);
         //  }
        });
-    }
+    }   
+}
+
+window.onclick=function(e){//关闭右键菜单
+ 	document.getElementById('menu').style.visibility = 'hidden';　//用户触发click事件就可以关闭了，因为绑定在window上，按事件冒泡处理，不会影响菜单的功能
+}
  </script>
 
 <style>
@@ -67,6 +76,21 @@
 *{
     margin:0;
     padding:0;
+}
+html,body{
+    width : 100%;height : 100%; margin: 0;padding: 0;
+}
+#menu{
+    width : 30px;
+    padding: 5px;
+    border : 2px solid rgb(241, 13, 13);
+    visibility : hidden;
+    position : absolute;
+}
+.input_center{
+    display: flex; /**/
+    justify-content: center; /*水平居中*/
+    align-items: Center; /*垂直居中*/
 }
 body{
     font-family:"微软雅黑";
