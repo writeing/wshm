@@ -4,7 +4,7 @@ from markupsafe import escape
 import os
 import re
 from spider import spider
-
+import threading
 app = Flask(__name__)
 
 
@@ -56,17 +56,20 @@ def readLocalImg(direct,name,num):
     imgList = strsort(os.listdir(path))
     print(imgList)
 
-homeURL= 'https://www.wshm23.com/'
+homeURL= 'https://www.wshm.cc/'
 
+downLoadItemDict = {"不务正业":"不务正业"}
 def downLoadItem(item,direct='week'):
+    global downLoadItemDict
     thread1 = spider(homeURL,update = False,itemNames = {item:0},isSaveHtml=False,direct=direct)
     thread1.start()
     thread1.join(1)
-    
+    downLoadItemDict[item] = thread1
 def downLoadcmd(cmd,direct='week'):
     thread1 = spider(homeURL,update = False,isSaveHtml=False,cmd=cmd,direct=direct)
     thread1.start()
     thread1.join(1)
+    
 globalUpdate = False
 def downLoadInit():
     global globalUpdate
@@ -79,39 +82,35 @@ def downLoadInit():
 historyList = []
 
 def buttonExec(request):
-    global historyList
+    global historyList,downLoadItemDict
     if request.method == 'POST': 
-        bt_dpic = request.values.get('dpic')
-        bt_title = request.values.get('title')
-        bt_root = request.values.get('root')
-        print(bt_dpic)
-        print(bt_title)
-        print(bt_root)
+        name = list(request.values.keys())[0]
+        bt_name = request.values.get(name)
         for year in historyList:
-            bt_year = request.values.get(year)
-            if bt_year == year:
-                print(bt_year)
+            if bt_name == year:
+                print(bt_name)
                 return year
-        print(bt_dpic)
-        print(bt_title)
-        print(bt_root)
         
-        if (bt_dpic == '更新dpic'):
+        if (bt_name == '更新dpic'):
             downLoadcmd(1,'week')
-        if (bt_title == '更新title'):
+        elif (bt_name == '更新title'):
             downLoadcmd(2,'week')
-        if (bt_root == '更新主页面'):
+        elif (bt_name == '更新主页面'):
             downLoadInit()
-            
+        else:
+            try:
+                downLoadItemDict[bt_name].cancel()
+            except:
+                print("had cancel")
     return 'week'
 @app.route('/',methods=['POST', 'GET'])
 def rootHome():
-    global historyList
+    global historyList,downLoadItemDict
     if len(historyList) == 0:
         historyList = downLoadInit()
-    value = buttonExec(request)    
+    value = buttonExec(request)
     readLocalFile(value)
-    return render_template('index.html',name = 'wshm',movies=movies,historyList = historyList,direct =value )
+    return render_template('index.html',name = 'wshm',movies=movies,historyList = historyList,direct =value,downItemDict = downLoadItemDict )
 
 @app.route('/user/<name>')
 def user_page(name):
@@ -135,6 +134,8 @@ def page_down(direct,item,num):
 def wshmItem(direct,item):
     readLocalTitle(direct,item)
     downLoadItem(item,direct)
+    print(item)
+    print(direct)
     return render_template('item.html',name = 'wshm',allItems = sg_items,item = item,direct=direct)
 
 @app.route('/wshm/img/<direct>/<item>/<num>/<itemName>')

@@ -17,6 +17,16 @@
             <input type=submit value='更新主页面' name="root">
         </form>
     </div>
+</br>
+    <div class="input_center">
+        <form action="" method="POST">
+            <p>正在下载的item:</p>
+            {% for downItem in downItemDict.keys() %}
+            <input type=submit value= {{ downItem }} name= {{ downItem }}>
+            {% endfor %} 
+        </form>
+    </div>
+</br>
     <div class="input_center">
         <form action="" method="POST">
             <input type=submit value= "week" name= "week">

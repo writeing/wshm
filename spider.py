@@ -9,7 +9,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 
 class spider(threading.Thread):
-    homeUrl = 'https://www.wshm23.com/'
+    homeUrl = 'https://www.wshm.cc/'
     homeHtml = ''
     index = 0
     basePathUrl = 'https://img.pic-server.com/'
@@ -251,8 +251,8 @@ class spider(threading.Thread):
             self.downdpicImg()
         if self.cmd == 2:
             self.downtitleList()
-        
         log.info("update&down finish")
+
 # if __name__ == '__main__':
 #     homeURL= 'https://www.wshm23.com/'
 #     thread1 = spider(homeURL,update = False,itemNames = {'超级公务员':30},isSaveHtml=False)
