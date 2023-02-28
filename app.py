@@ -58,15 +58,16 @@ def readLocalImg(direct,name,num):
 
 homeURL= 'https://www.wshm.cc/'
 
-downLoadItemDict = {"不务正业":"不务正业"}
+downLoadItemDict = {"":""}
 def downLoadItem(item,direct='week'):
     global downLoadItemDict
-    thread1 = spider(homeURL,update = False,itemNames = {item:0},isSaveHtml=False,direct=direct)
+    thread1 = spider(homeURL,update = False,itemNames = {item:1},isSaveHtml=False,catalogue=direct)
     thread1.start()
     thread1.join(1)
     downLoadItemDict[item] = thread1
+    
 def downLoadcmd(cmd,direct='week'):
-    thread1 = spider(homeURL,update = False,isSaveHtml=False,cmd=cmd,direct=direct)
+    thread1 = spider(homeURL,update = False,isSaveHtml=False,cmd=cmd,catalogue=direct)
     thread1.start()
     thread1.join(1)
     
@@ -99,6 +100,8 @@ def buttonExec(request):
             downLoadInit()
         else:
             try:
+                print(bt_name)
+                print(downLoadItemDict)
                 downLoadItemDict[bt_name].cancel()
             except:
                 print("had cancel")
@@ -109,6 +112,8 @@ def rootHome():
     if len(historyList) == 0:
         historyList = downLoadInit()
     value = buttonExec(request)
+    if value == 'week':
+        pass
     readLocalFile(value)
     return render_template('index.html',name = 'wshm',movies=movies,historyList = historyList,direct =value,downItemDict = downLoadItemDict )
 
@@ -130,10 +135,22 @@ def page_down(direct,item,num):
     readLocalImg(direct,item,num)
     return render_template('showImg.html',name = item,num = num,imgList=imgList,direct=direct)
 
-@app.route('/wshm/<direct>/<item>')
+
+
+@app.route('/wshm/<direct>/<item>',methods=['POST', 'GET'])
 def wshmItem(direct,item):
     readLocalTitle(direct,item)
-    downLoadItem(item,direct)
+    if request.method == 'POST': 
+        name = list(request.values.keys())[0]
+        bt_name = request.values.get(name)
+        print(bt_name)
+        if bt_name == '全部更新':
+            downLoadItem(item,direct)
+        if bt_name == '更新':
+            index = request.form.get('index')
+            print(index)
+            # downLoadItem(item,direct,int(index))
+            
     print(item)
     print(direct)
     return render_template('item.html',name = 'wshm',allItems = sg_items,item = item,direct=direct)
@@ -161,7 +178,7 @@ def test_url_for():
     return 'Test page'
 
 if __name__ == '__main__':
-    app.run(debug = True)
+    app.run(debug=True)
     globalUpdate = False
 
 

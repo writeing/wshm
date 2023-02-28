@@ -7,23 +7,24 @@ from loguru import logger as log
 import threading
 import sys
 from concurrent.futures import ThreadPoolExecutor
-
+from datetime import date
 class spider(threading.Thread):
     homeUrl = 'https://www.wshm.cc/'
     homeHtml = ''
     index = 0
     basePathUrl = 'https://img.pic-server.com/'
     serviceIndex = 0
-    
-    def __init__(self,fileUrl,update= False,itemNames={},isSaveHtml = False,cmd=0,direct='week'):
+    today = date.today()    
+    nowDate = today.strftime("_%d_%m_%Y")
+    def __init__(self,fileUrl,update= False,itemNames={},isSaveHtml = False,cmd=0,catalogue='week'):
         threading.Thread.__init__(self)
         self.homeUrl = fileUrl
         self.update = update
         self.updateItemNames = itemNames
         self.isSaveHtml = isSaveHtml
         self.cmd = cmd
-        self.direct = direct
-        self.homeHtml = self.downHtml()
+        self.catalogue = catalogue
+        self.homeHtml = self.downHtml(filename="home" + self.nowDate + ".html")
         self.getWeekHref()
         self.foreachWeekHTML()
         self.foreachYearHTML()
@@ -76,6 +77,8 @@ class spider(threading.Thread):
         if update == False or self.serviceIndex == 0:
             jpgModuleUrl = self.getNowItemLink(self.curItem)
             self.baseImgUrl = self.basePathUrl + jpgModuleUrl[3] + '/'
+            print(self.baseImgUrl)
+            print(len(jpgModuleUrl))
             if len(jpgModuleUrl) == 8:
                 #https://img.pic-server.com/[0]/2022-11-14/717/139/1.jpg
                 self.templeImgUrl = self.baseImgUrl + jpgModuleUrl[4]+ '/' + jpgModuleUrl[5] + '/'
@@ -102,7 +105,7 @@ class spider(threading.Thread):
         #find last empty dir file
         lastIndex = 1
         for dirFile in dirList:
-            if len(os.listdir(path + '/' + dirFile)) < 3:
+            if len(os.listdir(path + '/' + dirFile)) < 2:
                 lastIndex = int(dirFile)
                 break
             else:
@@ -119,7 +122,7 @@ class spider(threading.Thread):
             time.sleep(0.1)
             imgUrl = second_catalogue + str(index) + '.' + self.jgpsuf
             rpy = self.downImage(imgUrl,str(index),cartoonItemPath +'/' + str(i) + '/','.' + self.jgpsuf)
-            log.debug("down image {0},rpy:{1}",imgUrl,rpy)
+            log.debug("down {0},index:{1}/{2},rpy:{3}",cartoonItemPath,str(index),str(i),rpy)
             if 200 != rpy:
                 if index == 1:
                     second_catalogue = self.combinationImageUrl(i,cartoonItemPath,update = False)
@@ -133,7 +136,7 @@ class spider(threading.Thread):
         self.imgInfo = {}
         self.imgItemLen = len(self.imgItemLinkList)
         try:
-            cartoonItemPath = 'static/images/' + self.direct + '/' + itemname
+            cartoonItemPath = 'static/images/' + self.catalogue + '/' + itemname
             log.debug(cartoonItemPath)
             if not os.path.exists(cartoonItemPath):
                 os.makedirs(cartoonItemPath)  
@@ -149,7 +152,7 @@ class spider(threading.Thread):
             with ThreadPoolExecutor(self.imgItemLen - lastIndex + 1) as t2:              
                 for i in range(lastIndex,self.imgItemLen+1):
                     threadArgs['index'] = i
-                    time.sleep(0.1)
+                    time.sleep(3)
                     t2.submit(self.threadDownImage, threadArgs)        
 
         except Exception as e:
@@ -157,41 +160,74 @@ class spider(threading.Thread):
             log.error(e.strerror)
             log.error(second_catalogue)
             log.error(imgUrl)
+    def threadDownDpic(self,threadArgs):
+        cartoonInfo = threadArgs['item']
+        index = threadArgs['index']
+        itemname = cartoonInfo['name'][index]       
+        dpicSrc = cartoonInfo['dpic'][index]       
+        rpy = self.downImage(dpicSrc,itemname,'static/dpic/' + self.catalogue + '/')
+        log.debug("{0}--{1}:{2}",itemname,dpicSrc,rpy)    
+        pass
     # down dpic file
     def downdpicImg(self):
-        if not os.path.exists('static/dpic/' + self.direct):
-            os.mkdir('static/dpic/' + self.direct)
-        cartoonInfo = self.carToonInfoDict[self.direct]
-        for dpicSrc in cartoonInfo['dpic']:
-            index = cartoonInfo['dpic'].index(dpicSrc)
-            itemname = cartoonInfo['name'][index]                
-            rpy = self.downImage(dpicSrc,itemname,'static/dpic/' + self.direct + '/')
-            log.debug("{0}--{1}:{2}",itemname,dpicSrc,rpy)      
+        if not os.path.exists('static/dpic/' + self.catalogue):
+            os.mkdir('static/dpic/' + self.catalogue)
+        cartoonInfo = self.carToonInfoDict[self.catalogue]
+        
+        threadArgs = {}
+        threadArgs['item'] = cartoonInfo
+        with ThreadPoolExecutor(len(cartoonInfo['dpic'])) as t2:       
+            for i in range(0,len(cartoonInfo['dpic'])):
+                threadArgs['index'] = i
+                time.sleep(0.1)
+                t2.submit(self.threadDownDpic, threadArgs)
+                
+        # for dpicSrc in cartoonInfo['dpic']:
+        #     index = cartoonInfo['dpic'].index(dpicSrc)
+        #     itemname = cartoonInfo['name'][index]                
+        #     rpy = self.downImage(dpicSrc,itemname,'static/dpic/' + self.catalogue + '/')
+        #     log.debug("{0}--{1}:{2}",itemname,dpicSrc,rpy)      
+            
+            
+    def threadDownTitle(self,threadArgs):
+        cartoonInfo = threadArgs['item']
+        index = threadArgs['index']
+        itemurl = cartoonInfo['url'][index]
+        itemname = cartoonInfo['name'][index]
+        itemhtml = self.downHtml(self.homeUrl + itemurl,filename = itemname + self.nowDate + ".html")
+        itemhtml = etree.HTML(itemhtml)
+        self.imgItemTitleList = itemhtml.xpath("//div[@class='stab_list']//li/a/text()")
+        self.savaTitle(self.imgItemTitleList,itemname,path='static/title/' + self.catalogue + '/')
+        pass
     def downtitleList(self):
-        if not os.path.exists('static/title/' + self.direct):
-            os.mkdir('static/title/' + self.direct)
-        cartoonInfo = self.carToonInfoDict[self.direct]
-        print(cartoonInfo)
-        for itemurl in cartoonInfo['url']:
-            index = cartoonInfo['url'].index(itemurl)
-            itemname = cartoonInfo['name'][index]
-            itemhtml = self.downHtml(self.homeUrl + itemurl,filename = itemname + ".html")
-            itemhtml = etree.HTML(itemhtml)
-            self.imgItemTitleList = itemhtml.xpath("//div[@class='stab_list']//li/a/text()")
-            self.savaTitle(self.imgItemTitleList,itemname,path='static/title/' + self.direct + '/')
-               
+        if not os.path.exists('static/title/' + self.catalogue):
+            os.mkdir('static/title/' + self.catalogue)
+        cartoonInfo = self.carToonInfoDict[self.catalogue]
+        log.info(cartoonInfo['name'])
+        log.info(len(cartoonInfo['name']))
+        # for itemurl in cartoonInfo['url']:
+        #     index = cartoonInfo['url'].index(itemurl)
+        #     itemname = cartoonInfo['name'][index]
+            
+        threadArgs = {}
+        threadArgs['item'] = cartoonInfo
+        with ThreadPoolExecutor(len(cartoonInfo['url'])) as t2:       
+            for i in range(0,len(cartoonInfo['url'])):
+                threadArgs['index'] = i
+                time.sleep(0.1)
+                t2.submit(self.threadDownTitle, threadArgs)                    
     def getItemImageInfo(self):
-        cartoonInfo = self.carToonInfoDict[self.direct]
+        cartoonInfo = self.carToonInfoDict[self.catalogue]
         for itemurl in cartoonInfo['url']:
             index = cartoonInfo['url'].index(itemurl)
             itemname = cartoonInfo['name'][index]
+            # if set update items
             if len(self.updateItemNames) != 0:
                 names = self.updateItemNames.keys()
                 if itemname not in names:
                     continue
-            
             log.debug('find name:' + itemname)
-            itemhtml = self.downHtml(self.homeUrl + itemurl,filename = itemname + ".html")
+            itemhtml = self.downHtml(self.homeUrl + itemurl,filename = itemname + self.nowDate + ".html")
             itemhtml = etree.HTML(itemhtml)
             #get href info
             self.imgItemLinkList = itemhtml.xpath("//div[@class='stab_list']//li/a/@href")
@@ -201,17 +237,17 @@ class spider(threading.Thread):
         self.carToonInfoDict = {}
         weekItemList = []
         weeknameList = []
-        weekdpicList = []        
+        weekdpicList = []
         for dayUrl in self.weekUrlList:    
             self.index = self.weekUrlList.index(dayUrl)
-            filename = 'week' + str(self.index + 1) + ".html"
+            filename = 'week' + str(self.index + 1) + self.nowDate + ".html"
             weekhtml = self.downHtml(self.homeUrl + dayUrl,filename = filename)
             if weekhtml == '':
                 log.error(self.homeUrl + dayUrl + " open False")
             weekhtml = etree.HTML(weekhtml)
             weekItemList += weekhtml.xpath('//div[@class="li_img"]/a/@href')
             weeknameList += weekhtml.xpath('//a[@class="alink"]/@title')
-            weekdpicList += weekhtml.xpath('//img[@class="dpic dh"]/@src')
+            weekdpicList += weekhtml.xpath('//img[@class="dpic dh"]/@src')          
         self.carToonInfoDict['week'] = {'url':weekItemList,'name':weeknameList,'dpic':weekdpicList}
     def foreachYearHTML(self):
         for yearUrl in self.yearUrlList:
@@ -244,6 +280,7 @@ class spider(threading.Thread):
         self.weekUrlList = self.homeHtml.xpath('//div[@class="nav_down clearfix"]/div[@class="nav_1000"]//li/a/@href')[:7]
         self.yearUrlList = self.homeHtml.xpath('//div[@class="nav_down clearfix"]/div[@class="nav_1000"]//li/a/@href')[7:]
         self.yearNameList = self.homeHtml.xpath('//div[@class="nav_down clearfix"]/div[@class="nav_1000"]//li/a/text()')[7:]
+        print(self.yearNameList)
     def run(self):
         if self.cmd == 0:
             self.getItemImageInfo()
@@ -254,8 +291,8 @@ class spider(threading.Thread):
         log.info("update&down finish")
 
 # if __name__ == '__main__':
-#     homeURL= 'https://www.wshm23.com/'
-#     thread1 = spider(homeURL,update = False,itemNames = {'超级公务员':30},isSaveHtml=False)
+#     homeURL= 'https://www.wshm.cc'
+#     thread1 = spider(homeURL,update = False,itemNames = {'超级公务员':30,'职场陷阱':0},isSaveHtml = True)
 #     thread1.start()
 #     thread1.join()
 #     log.info("退出主线程")

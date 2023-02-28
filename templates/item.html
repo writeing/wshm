@@ -10,6 +10,15 @@
     <h2>{{ item }}</h2>
 
     <p>{{ allItems | length }} Titles</p>
+
+    <div class="input_center">
+        
+        <form action="" method="POST">
+            <p><input type=submit value= "全部更新" name= "全部更新"></p>
+            <input type=submit value= "更新" name= "更新">
+            <input type="text" name= "index">
+        </form>        
+    </div>
     <img width="160px" height="240px" alt="" src="{{ url_for('static', filename='dpic/' + direct + '/' + item + '.png') }}">
         <ul>
             {% for ll in allItems %}
@@ -106,6 +115,11 @@ body{
 }
 .box ul li:hover .deatil{
     top:0;
+}
+.input_center{
+    display: flex; /**/
+    justify-content: center; /*水平居中*/
+    align-items: Center; /*垂直居中*/
 }
 </style>
 </html>
