@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ch">
+
+<head>
+    <meta charset="utf-8">
+    <title>{{ direct }}:{{ name }} </title>
+</head>
+
+<body>
+    <h2>{{ name }}'s Watchlist</h2>
+    {# 使用 length 过滤器获取 movies 变量的长度 #}
+    <p>{{ movies|length }} Titles</p>
+    <div class="input_center"> 
+        <form action="" method="POST">
+            <input type=submit value='更新dpic' name="dpic">
+            <input type=submit value='更新title' name="title">
+            <input type=submit value='更新主页面' name="root">
+        </form>
+    </div>
+</br>
+    <div class="input_center">
+        <form action="" method="POST">
+            <p>正在下载的item:</p>
+            {% for downItem in downItemDict.keys() %}
+            <input type=submit value= {{ downItem }} name= {{ downItem }}>
+            {% endfor %} 
+        </form>
+    </div>
+</br>
+    <div class="input_center">
+        <form action="" method="POST">
+            <input type=submit value= "week" name= "week">
+            {% for year in historyList %}
+            <input type=submit value= {{year}} name= {{year}}>
+            {% endfor %} 
+        </form>
+    </div>
+    <div class="box">
+        <ul>
+            {% for item in movies.keys() %}
+            <li >                
+                <a href="/wshm//{{ movies[item] }}" >
+                <img width="160px" height="240px" alt="" src="{{ url_for('static', filename='dpic/' + movies[item]) }}" >
+                </a>
+                <div class="deatil" >
+                <p><a href="/wshm//{{ movies[item] }}" >{{ item }}</a></p> 
+                </div>
+            </li> 
+            {% endfor %} 
+        </ul>
+    </div>
+    </br>
+    </br>
+    <footer>
+        <small>&copy; 2018 <a href="http://helloflask.com/book/3">HelloFlask</a></small>
+    </footer>
+</body>
+<script type="text/javascript">
+    function update(parm)
+    {
+        $.ajax(
+       {
+          type: "POST",
+          url: "/wshm" + parm,
+          dataType: "html",
+        //   success: function(msg)
+        //   {
+        //       console.log(msg);
+        //       $("#display").html(msg);//注意显示的id
+        //   },
+        //   error: function (xhr, status, error) {
+        //      console.log(error);
+        //  }
+       });
+    }   
+}
+
+window.onclick=function(e){//关闭右键菜单
+ 	document.getElementById('menu').style.visibility = 'hidden';　//用户触发click事件就可以关闭了，因为绑定在window上，按事件冒泡处理，不会影响菜单的功能
+}
+ </script>
+
+<style>
+@charset "utf-8";
+/* CSS Document */
+*{
+    margin:0;
+    padding:0;
+}
+html,body{
+    width : 100%;height : 100%; margin: 0;padding: 0;
+}
+#menu{
+    width : 30px;
+    padding: 5px;
+    border : 2px solid rgb(241, 13, 13);
+    visibility : hidden;
+    position : absolute;
+}
+.input_center{
+    display: flex; /**/
+    justify-content: center; /*水平居中*/
+    align-items: Center; /*垂直居中*/
+}
+body{
+    font-family:"微软雅黑";
+    background-color:#ddd;
+}
+.box{
+    width:1800px;
+    height:6000px;
+    background:#fff;
+    margin:30px auto;
+    padding:10px;
+}
+.box .head span{
+    font-size:18px;
+    color:#333;
+}
+.box .head{
+    margin-bottom:20px;
+}
+.box .head a{
+    text-decoration:none;
+    float:right;
+    font-size:15px;
+    color:#333; 
+}
+.box .head a:hover{
+    color:#F00;
+}
+.box ul li{
+    width:160px;
+    height:250px;
+    list-style:none;
+    position:relative;
+    float:left;
+    margin-left:20px;
+    margin-bottom:20px;
+    /* overflow:hidden; */
+}
+.box ul li .deatil{
+    width:160px;
+    height:240px;
+    /* background:rgba(0,0,0,0.7); */
+    position:relative;
+    /* top:-240px; */
+    /* -webkit-transition:all 0.3s ease;<!--适应ie，谷歌，苹果浏览器内核-->
+    -o-transition:all 0.3s ease;<!--适应Opera浏览器内核-->
+    -moz-transition:all 0.3s ease;<!--火狐浏览器-->
+    -ms-transition:all 0.3s ease;<!--微软--> */
+}
+
+.box ul li .deatil h2{
+    font-size:18px;
+    color:#fff;
+    text-align:center;
+    padding-top:30px;
+    }
+/* .box ul li .deatil p{
+    font-size:16px;
+    text-align:center;
+    margin:30px;
+    color:rgb(7, 5, 5);
+} */
+.box ul li .deatil a{
+    font-size:15px;
+    display:block;
+    color:rgb(15, 15, 15);
+    text-decoration:none;
+    width:100px;
+    height:30px;
+    text-align:center;
+    line-height:25px;
+    margin:0 auto;
+}
+.box ul li:hover .deatil{
+    top:0;
+}
+</style>
+</html>

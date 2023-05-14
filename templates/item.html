@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ch">
+
+<head>
+    <meta charset="utf-8">
+    <title>{{ item }} </title>
+</head>
+
+<body align="center">
+    <h2>{{ item }}</h2>
+
+    <p>{{ allItems | length }} Titles</p>
+
+    <div class="input_center">
+        <p><a href="/" > HOME </a>
+        <form action="" method="POST">
+            <p><input type=submit value= "全部更新" name= "allupdate"></p>
+            <input type=submit value= "更新" name= "singupdate">
+            <input type="text" name= "index">
+        </form>        
+    </div>
+    <img width="160px" height="240px" alt="" src="{{ url_for('static', filename='dpic/' + item + '.jpg') }}">
+        <ul>
+            {% for ll in allItems %}
+            <li>
+                <p><a href="/wshm/img/{{item}}/{{loop.index}}/{{ll}}" >{{ ll }}</a></p> 
+            </li> 
+            {% endfor %} 
+        </ul>
+    <footer>
+        <small>&copy; 2022 <a href="http://helloflask.com/book/3">HelloFlask</a></small>
+    </footer>
+</body>
+<style>
+@charset "utf-8";
+/* CSS Document */
+*{
+    margin:0;
+    padding:0;
+}
+body{
+    font-family:"微软雅黑";
+    background-color:#ddd;
+    margin: 0 auto;
+    width: 600px;
+    /* height: 30000px; */
+}
+.box{
+    width:1800px;
+    height:6000px;
+    background:#fff;
+    margin:30px auto;
+    padding:10px;
+}
+.box .head span{
+    font-size:18px;
+    color:#333;
+}
+.box .head{
+    margin-bottom:20px;
+}
+.box .head a{
+    text-decoration:none;
+    float:right;
+    font-size:15px;
+    color:#333; 
+}
+.box .head a:hover{
+    color:#F00;
+}
+.box ul li{
+    width:160px;
+    height:250px;
+    list-style:none;
+    position:relative;
+    float:left;
+    margin-left:20px;
+    margin-bottom:20px;
+    /* overflow:hidden; */
+}
+.box ul li .deatil{
+    width:160px;
+    height:240px;
+    /* background:rgba(0,0,0,0.7); */
+    position:relative;
+    /* top:-240px; */
+    /* -webkit-transition:all 0.3s ease;<!--适应ie，谷歌，苹果浏览器内核-->
+    -o-transition:all 0.3s ease;<!--适应Opera浏览器内核-->
+    -moz-transition:all 0.3s ease;<!--火狐浏览器-->
+    -ms-transition:all 0.3s ease;<!--微软--> */
+}
+
+.box ul li .deatil h2{
+    font-size:18px;
+    color:#fff;
+    text-align:center;
+    padding-top:30px;
+    }
+/* .box ul li .deatil p{
+    font-size:16px;
+    text-align:center;
+    margin:30px;
+    color:rgb(7, 5, 5);
+} */
+.box ul li .deatil a{
+    font-size:15px;
+    display:block;
+    color:rgb(15, 15, 15);
+    text-decoration:none;
+    width:100px;
+    height:30px;
+    text-align:center;
+    line-height:25px;
+    margin:0 auto;
+}
+.box ul li:hover .deatil{
+    top:0;
+}
+.input_center{
+    display: flex; /**/
+    justify-content: center; /*水平居中*/
+    align-items: Center; /*垂直居中*/
+}
+</style>
+</html>
