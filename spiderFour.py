@@ -133,6 +133,7 @@ class spider(threading.Thread):
         threadArgs = {}
         itemJson = ''
         itemName = self.updateItemNames['name']
+        itemIndex = self.updateItemNames['index']
         self.itemDownCount = 0
         for item in self.jsonRpy['item']:
             if itemName == item['title']:
@@ -140,11 +141,11 @@ class spider(threading.Thread):
                 self.threadDownUrl(threadArgs)
         with open('static/url/' +  threadArgs['dictJson']['title'] + '.json','r') as file:
             itemJson = json.loads(file.read())['result']
-        maxThread = int(itemJson['totalRow'])
+        maxThread = int(itemJson['totalRow']) - itemIndex
     
         with ThreadPoolExecutor(maxThread) as t2:    
-            for j in range(0,maxThread):
-                threadArgs['imagedict'] = itemJson['list'][j]
+            for j in range(itemIndex,itemIndex + maxThread):
+                threadArgs['imagedict'] = itemJson['list'][int(itemJson['totalRow']) - j]
                 t2.submit(self.downSignalImage, threadArgs)
                 
     def threadDownDpic(self,threadArgs):
@@ -175,7 +176,11 @@ class spider(threading.Thread):
                 for j in range(i,i + 100):
                     threadArgs['index'] = j
                     t2.submit(self.threadDownDpic, threadArgs)
+            timeout = time.time()
             while True:
+                if time.time() - timeout > 10:
+                    log.debug("had down a cycle:{0},timeout",self.dhcpDownCount)
+                    break
                 if self.dhcpDownCount == i + 100 or self.dhcpDownCount == len(self.jsonRpy['item']):
                     log.debug("had down a cycle:{0}",self.dhcpDownCount)
                     break
@@ -188,13 +193,18 @@ class spider(threading.Thread):
     def threadDownUrl(self,threadArgs):
     
         cartoonInfo = threadArgs['dictJson']
-
-        dpicSrc = "https://www.a8b77.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],'1')
-        rpy = requests.get(dpicSrc).text
-        
-        itemLen = json.loads(rpy)['result']['totalRow']
-        
-        dpicSrc = "https://www.a8b77.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],str(itemLen))
+        log.debug("id = {0}",cartoonInfo['id'])
+        dpicSrc = "https://www.a4d26.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],'1')
+        # log.info(dpicSrc)
+        try:
+            rpy = requests.get(dpicSrc).text        
+        except:
+            log.error("url mush charge {0}",dpicSrc)
+            self.itemDownCount += 1
+            return
+        # log.info(rpy)
+        itemLen = json.loads(rpy)['result']['totalRow']        
+        dpicSrc = "https://www.a4d26.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],str(itemLen))
         rpy = requests.get(dpicSrc).text
         self.saveTitleForJson(rpy,cartoonInfo['title'])
         self.savaUrl(rpy,cartoonInfo['title'],'static/url/')        
@@ -210,9 +220,12 @@ class spider(threading.Thread):
         self.itemDownCount = 0
         for i in range(0,len(self.jsonRpy['item']),100):
             log.debug("begin down url {0}",i)
-            with ThreadPoolExecutor(100) as t2:       
+            with ThreadPoolExecutor(100) as t2:
                 for j in range(i,i + 100):
-                    threadArgs['dictJson'] = self.jsonRpy['item'][j]
+                    try:
+                        threadArgs['dictJson'] = self.jsonRpy['item'][j]
+                    except:
+                        break
                     t2.submit(self.threadDownUrl, threadArgs)
             while True:
                 if self.itemDownCount == i + 100 or self.itemDownCount == len(self.jsonRpy['item']):
@@ -220,7 +233,7 @@ class spider(threading.Thread):
                     break
     def getAllItemJson(self):
         itemCurIndex = 1
-        originHttp = 'https://www.a8b77.com/home/api/cate/tp/1-0-2-1-{0}'
+        originHttp = 'https://www.a4d26.com/home/api/cate/tp/1-0-2-1-{0}'
         
         while True:
             nowhttp = originHttp.format(str(itemCurIndex))

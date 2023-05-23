@@ -16,7 +16,7 @@ def readLocalFile(direct = ''):
     global movies
     movies = {}
     titlePath = 'static/title/'
-    try:
+    try:        
         titleFileNames = os.listdir(titlePath)
     except:
         downLoadcmd(2,direct)
@@ -74,9 +74,9 @@ def readLocalImg(name,itemName):
 homeURL= 'https://www.wshm.cc/'
 
 downLoadItemDict = {"":""}
-def downLoadItem(item,index = 1):
+def downLoadItem(item,index = 0):
     global downLoadItemDict
-    log.info("begin down file {0}",item)
+    log.info("begin down file {0} index:{1}",item,index)
     item = getFileName(item)
     thread1 = spider(homeURL,update = False,itemNames = {"name":item,"index":index},isSaveHtml=False,cmd=2)
     thread1.start()
@@ -94,7 +94,6 @@ def downLoadInit():
     thread1 = spider(homeURL,update = globalUpdate,isSaveHtml=True,cmd = 3)
     thread1.start()
     thread1.join(1)
-    return thread1.yearNameList
 
 
 historyList = []
@@ -110,11 +109,11 @@ def buttonExec(request):
                 return year
         
         if (bt_name == '更新dpic'):
-            downLoadcmd(1,'week')
+            downLoadcmd(1) # updata dict
         elif (bt_name == '更新title'):
-            downLoadcmd(2,'week')
+            downLoadcmd(0) # update all item
         elif (bt_name == '更新主页面'):
-            downLoadInit()
+            downLoadInit()  # update all json            
         else:
             try:
                 print(bt_name)
@@ -128,6 +127,7 @@ def rootHome():
     global historyList,downLoadItemDict
     # if len(historyList) == 0:
     #     historyList = downLoadInit()
+    buttonExec(request)
     readLocalFile('')
     return render_template('index.html',name = 'four',movies=movies,historyList = historyList,downItemDict = downLoadItemDict )
 
@@ -190,9 +190,9 @@ def wshmItem(item):
         log.debug("btn:{0}",bt_name)
         if 'allupdate' in request.values.keys():
             downLoadItem(item)
-        # if 'singupdate' in request.values.keys():
-        #     index = request.form.get('index')
-        #     downLoadItem(item,int(index))
+        if 'singupdate' in request.values.keys():
+            index = request.form.get('index')
+            downLoadItem(item,int(index))
             
     log.info("index:{0},item:{1}",index,item)
     ss = sg_items[::-1]
