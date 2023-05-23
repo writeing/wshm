@@ -5,6 +5,7 @@ import os
 import re
 from spider import spider
 import threading
+from loguru import logger as log
 app = Flask(__name__)
 
 
@@ -59,9 +60,10 @@ def readLocalImg(direct,name,num):
 homeURL= 'https://www.wshm.cc/'
 
 downLoadItemDict = {"":""}
-def downLoadItem(item,direct='week'):
+def downLoadItem(item,direct='week',index = 1):
     global downLoadItemDict
-    thread1 = spider(homeURL,update = False,itemNames = {item:1},isSaveHtml=False,catalogue=direct)
+    log.info("begin down file {0}",item)
+    thread1 = spider(homeURL,update = False,itemNames = {item:index},isSaveHtml=False,catalogue=direct)
     thread1.start()
     thread1.join(1)
     downLoadItemDict[item] = thread1
@@ -140,19 +142,19 @@ def page_down(direct,item,num):
 @app.route('/wshm/<direct>/<item>',methods=['POST', 'GET'])
 def wshmItem(direct,item):
     readLocalTitle(direct,item)
+    index = 1
     if request.method == 'POST': 
         name = list(request.values.keys())[0]
+        log.debug("name:{0}",request.values.keys())
         bt_name = request.values.get(name)
-        print(bt_name)
-        if bt_name == '全部更新':
+        log.debug("btn:{0}",bt_name)
+        if 'allupdate' in request.values.keys():
             downLoadItem(item,direct)
-        if bt_name == '更新':
+        if 'singupdate' in request.values.keys():
             index = request.form.get('index')
-            print(index)
-            # downLoadItem(item,direct,int(index))
+            downLoadItem(item,direct,int(index))
             
-    print(item)
-    print(direct)
+    log.info("index:{0},item:{1},direct:{2}",index,item,direct)
     return render_template('item.html',name = 'wshm',allItems = sg_items,item = item,direct=direct)
 
 @app.route('/wshm/img/<direct>/<item>/<num>/<itemName>')

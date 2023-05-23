@@ -8,6 +8,7 @@ import threading
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date,timedelta,datetime
+import json
 class spider(threading.Thread):
     homeUrl = 'https://www.wshm.cc/'
     homeHtml = ''
@@ -15,7 +16,8 @@ class spider(threading.Thread):
     basePathUrl = 'https://img.pic-server.com/'
     serviceIndex = 0
     today = date.today()    
-    nowDate = today.strftime("_%d_%m_%Y")
+    # nowDate = today.strftime("_%d_%m_%Y")
+    nowDate = "_21_03_2023"
     def __init__(self,fileUrl,update= False,itemNames={},isSaveHtml = False,cmd=0,catalogue='week'):
         threading.Thread.__init__(self)
         self.homeUrl = fileUrl
@@ -24,6 +26,7 @@ class spider(threading.Thread):
         self.isSaveHtml = isSaveHtml
         self.cmd = cmd
         self.catalogue = catalogue
+        log.debug(self.nowDate)
         self.homeHtml = self.downHtml(filename="home" + self.nowDate + ".html")
         self.getWeekHref()
         self.foreachWeekHTML()
@@ -36,7 +39,10 @@ class spider(threading.Thread):
                 html = ff.read()
             log.debug('had down html {0}\n',filename)
         else:
-            html = requests.get(url).text
+            try:
+                html = requests.get(url).text
+            except :
+                html = "no find"                
             if self.isSaveHtml:
                 with open(path + filename,'w') as ff:
                     ff.write(html)
@@ -120,7 +126,7 @@ class spider(threading.Thread):
     def threadDownImage(self,args):
         cartoonItemPath = args['path']
         i = args['index']
-        second_catalogue = self.listDownUrl[i]
+        second_catalogue = self.listDownUrl[i - 1]
         index = 1
         reCount = 0    
         temp = re.split(r'[/]',second_catalogue)   
@@ -140,12 +146,32 @@ class spider(threading.Thread):
             index += 1
     def getCurItemDownUrl(self,itemname,loop = 1):
         self.listDownUrl = []
-        originUrl = self.getNowItemLink(0)
-        log.debug(originUrl)
-        temp = re.split(r'[/]',originUrl)
+        log.debug(itemname)
+        fileName = itemname 
+        if os.path.exists("static/item.json"):
+            with open("static/item.json",'r')  as file:
+                t = file.read()
+                js = json.loads(t)
+                log.debug(js["item"])
+                for name in js["item"]:
+                    if itemname in name.values():
+                        for aa in name:
+                            fileName =  aa
+                            log.info(fileName)
+                            break
+                        break
+                    else:                        
+                        fileName = itemname 
+        log.debug(fileName)
+        # originUrl = self.getNowItemLink(0)
+        # originUrl = 
+        # log.debug(originUrl)
+        # temp = re.split(r'[/]',originUrl)
+        temp = itemname
         curIndex = 1 
-        if os.path.exists('static/url/' + temp[5] + ".ini"):
-            with open('static/url/' + temp[5] + ".ini",'r')  as file:
+        log.debug(fileName)
+        if os.path.exists('static/url/' + fileName + ".ini"):
+            with open('static/url/' + fileName + ".ini",'r')  as file:
                 self.listDownUrl = file.readlines()
                 log.info(self.listDownUrl)      
                 if len(self.listDownUrl) != 0:
@@ -153,50 +179,66 @@ class spider(threading.Thread):
                     curIndex += len(self.listDownUrl)
                 else:
                     self.listDownUrl = []
-        from_arg_dt  = temp[4]
-        begin_datetime = datetime.strptime(from_arg_dt, '%Y-%m-%d')        
-        temp[6] = str(curIndex)
+        log.debug("itemname:{0},len = {1}",itemname,len(temp))
+        if len(temp) != 6:
+            from_arg_dt  = temp[4]
+            begin_datetime = datetime.strptime(from_arg_dt, '%Y-%m-%d')    
+            oriItemIndex = temp[3]
+        
+        temp[-2] = str(curIndex)
         temp[-1] = '1.jpg'
         dateDay = 0
         errorCount = 0
-        oriItemIndex = temp[3]
         while True:
-            if len(self.listDownUrl) == len(self.imgItemLinkList):
-                break
-            temp[3] = oriItemIndex
-            temp_dateDay = dateDay
-            for i in range(5):
-                dateDay = temp_dateDay
-                for j in range(10):  
-                    self.jpgOriginUrl = "/".join(temp)
-                    # log.debug(self.jpgOriginUrl)
-                    img = requests.head(self.jpgOriginUrl)
-                    rpy = img.status_code
-                    if rpy == 200:
-                        log.debug("find success {0}",self.jpgOriginUrl)
-                        self.listDownUrl.append(self.jpgOriginUrl)
-                        curIndex += 1
-                        temp[6] = str(curIndex)
-                        errorCount = 0
-                        break
+            if len(temp) == 6:
+                self.jpgOriginUrl = "/".join(temp)
+                self.listDownUrl.append(self.jpgOriginUrl)
+                curIndex += 1
+                temp[-2] = str(curIndex)
+                log.debug(self.jpgOriginUrl)
+
+            # if len(self.listDownUrl) == len(self.imgItemLinkList):
+            #     break
+            elif len(temp) == 8:
+                temp[3] = oriItemIndex
+                temp_dateDay = dateDay
+                for i in range(5):
+                    dateDay = temp_dateDay
+                    for j in range(10):  
+                        self.jpgOriginUrl = "/".join(temp)
+                        log.debug(self.jpgOriginUrl)
+                        img = requests.head(self.jpgOriginUrl)
+                        rpy = img.status_code
+                        if rpy == 200:
+                            log.debug("find success {0}",self.jpgOriginUrl)
+                            self.listDownUrl.append(self.jpgOriginUrl)
+                            curIndex += 1
+                            temp[6] = str(curIndex)
+                            errorCount = 0
+                            break
+                        else:
+                            dateDay += loop
+                            dt = begin_datetime + timedelta(days=dateDay)
+                            dt_str = dt.strftime('%Y-%m-%d')
+                            temp[4] = dt_str                  
+                            errorCount += 1                
+                    if errorCount != 0:          
+                        temp[3] = '[' + str(i) + ']'   
                     else:
-                        dateDay += loop
-                        dt = begin_datetime + timedelta(days=dateDay)
-                        dt_str = dt.strftime('%Y-%m-%d')
-                        temp[4] = dt_str                  
-                        errorCount += 1                
-                if errorCount != 0:          
-                    temp[3] = '[' + str(i) + ']'   
-                else:
-                    break    
+                        break
+            img = requests.head(self.jpgOriginUrl)
+            rpy = img.status_code
+            if rpy != 200:
+                break
         # log.debug(self.listDownUrl)
+        self.imgItemLen = curIndex
         log.info("down {0} url had finish",itemname)
         self.listDownUrl = ",".join(self.listDownUrl).replace("\n","").split(',')
         with open('static/url/' + temp[5] + ".ini",'w')  as file:
             file.write("\r".join(self.listDownUrl))
     def downItemImage(self,itemname):
         self.imgInfo = {}
-        self.imgItemLen = len(self.imgItemLinkList)
+        self.imgItemLen = 1 #len(self.imgItemLinkList)
         try:
             cartoonItemPath = 'static/images/' + self.catalogue + '/' + itemname
             log.debug(cartoonItemPath)
@@ -214,7 +256,7 @@ class spider(threading.Thread):
             threadArgs['path'] = cartoonItemPath               
             self.getCurItemDownUrl(itemname)
             with ThreadPoolExecutor(self.imgItemLen - lastIndex + 1) as t2:              
-                for i in range(lastIndex - 1,self.imgItemLen):
+                for i in range(lastIndex,self.imgItemLen + 1):
                     threadArgs['index'] = i
                     time.sleep(1)
                     t2.submit(self.threadDownImage, threadArgs)        
@@ -284,10 +326,10 @@ class spider(threading.Thread):
                 if itemname not in names:
                     continue
             log.debug('find name:' + itemname)
-            itemhtml = self.downHtml(self.homeUrl + itemurl,filename = itemname + self.nowDate + ".html")
-            itemhtml = etree.HTML(itemhtml)
-            #get href info
-            self.imgItemLinkList = itemhtml.xpath("//div[@class='stab_list']//li/a/@href")
+            # itemhtml = self.downHtml(self.homeUrl + itemurl,filename = itemname + self.nowDate + ".html")
+            # itemhtml = etree.HTML(itemhtml)
+            # #get href info
+            # self.imgItemLinkList = itemhtml.xpath("//div[@class='stab_list']//li/a/@href")
             self.downItemImage(itemname)
      
     def foreachWeekHTML(self):
@@ -347,9 +389,9 @@ class spider(threading.Thread):
             self.downtitleList()
         log.info("update&down finish")
 
-if __name__ == '__main__':
-    homeURL= 'https://www.wshm.cc/'
-    thread1 = spider(homeURL,update = False,itemNames = {'小巷里的秘密':10},isSaveHtml = False,catalogue='week')
-    thread1.start()
-    thread1.join()
-    log.info("退出主线程")
+# if __name__ == '__main__':
+#     homeURL= 'https://www.wshm.cc/'
+#     thread1 = spider(homeURL,update = False,itemNames = {'小巷里的秘密':10},isSaveHtml = False,catalogue='week')
+#     thread1.start()
+#     thread1.join()
+#     log.info("退出主线程")
