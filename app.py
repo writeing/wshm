@@ -71,10 +71,10 @@ def readLocalImg(name,itemName):
             break
     print(imgList)
 
-homeURL= 'https://www.wshm.cc/'
+homeURL= ''
 
 downLoadItemDict = {"":""}
-def downLoadItem(item,index = 0):
+def downLoadItem(item,index = -1):
     global downLoadItemDict
     log.info("begin down file {0} index:{1}",item,index)
     item = getFileName(item)

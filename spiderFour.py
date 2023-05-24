@@ -9,6 +9,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date,timedelta,datetime
 import json
+import opencc
 class spider(threading.Thread):
     homeUrl = 'https://www.wshm.cc/'
     homeHtml = ''
@@ -18,6 +19,8 @@ class spider(threading.Thread):
     today = date.today()    
     nowDate = today.strftime("_%d_%m_%Y")
     jsonRpy = {"item":[]}
+    converter = opencc.OpenCC("t2s")
+    downListInfo = {}
     def __init__(self,fileUrl,update= False,itemNames={},isSaveHtml = False,cmd=0,catalogue='week'):
         threading.Thread.__init__(self)
         self.homeUrl = fileUrl
@@ -26,8 +29,7 @@ class spider(threading.Thread):
         self.isSaveHtml = isSaveHtml
         self.cmd = cmd
         self.catalogue = catalogue
-        log.debug(self.nowDate)
-
+        log.debug(self.nowDate)        
     def downImage(self,url,name,path,imgType = '.jpg'):
         if os.path.exists( path + name + imgType):
             log.info('image:{0} had down \n',name)
@@ -45,11 +47,15 @@ class spider(threading.Thread):
             log.error("write file error {0} {1}",path +  name + imgType,type(img.content))
         return img.status_code
     
-    def savaTitle(self,listTitle,name,path = 'static/title/'):        
+    def savaTitle(self,listTitle,name,path = 'static/title/'):    
+        if not os.path.exists(path):
+            os.makedirs(path)
         with open(path+name+'.ini','w') as file:
             for title in listTitle:
                 file.write(title + "\n")
     def savaUrl(self,listTitle,name,path = 'static/title/'):        
+        if not os.path.exists(path):
+            os.makedirs(path)
         with open(path+name+'.json','w') as file:
                 file.write(listTitle + "\n")
     def saveImage(self,threadArgs):
@@ -98,6 +104,7 @@ class spider(threading.Thread):
             threadArgs['dictJson'] = self.jsonRpy['item']
             self.ImageDownCount = 0
             maxThread = 20
+            self.downListInfo["info"][self.updateItemNames['name']] = len(self.jsonRpy['item'])
             for i in range(0,len(self.jsonRpy['item']),maxThread):
                 log.debug("begin down images {0}",i)
                 with ThreadPoolExecutor(maxThread) as t2:    
@@ -115,16 +122,13 @@ class spider(threading.Thread):
             log.error(imgUrl)
     
     def downSignalImage(self,threadArgs):
-        imagesInfo = threadArgs['imagedict']
-        imageslist = imagesInfo['imagelist'].split(',')
-        i = 0
-        title = imagesInfo['title']
+        imageUrl = threadArgs['imageUrl']
+        index = threadArgs['index']
+        title = threadArgs['title']
         itemName = self.updateItemNames['name']
-        for image in imageslist:
-            self.downImage("https://cdn.ifs7gsd2f.com/" + image,str(i),'static/images/' + itemName + "/" + title + '/')
-            log.debug("{0}--{1}---{2}/{3}",itemName,title,i,len(imageslist))
-            i += 1
-        pass
+        self.downImage("https://cdn.ifs7gsd2f.com/" + imageUrl,str(index),'static/images/' + itemName + "/" + title + '/')
+        log.debug("{0}--{1}---{2}/{3}",itemName,title,index)
+        self.itemDownCount +=1 
 
     def downSignalItemImage(self):
         if len(self.jsonRpy['item']) == 0:
@@ -135,18 +139,30 @@ class spider(threading.Thread):
         itemName = self.updateItemNames['name']
         itemIndex = self.updateItemNames['index']
         self.itemDownCount = 0
+        t2sTitle = itemName
         for item in self.jsonRpy['item']:
-            if itemName == item['title']:
+            # log.error(item['title'])
+            if itemName in self.converter.convert(item['title']):
                 threadArgs['dictJson'] = item
                 self.threadDownUrl(threadArgs)
-        with open('static/url/' +  threadArgs['dictJson']['title'] + '.json','r') as file:
+                t2sTitle = self.converter.convert(item['title'])
+        with open('static/url/' +  t2sTitle + '.json','r') as file:
             itemJson = json.loads(file.read())['result']
-        maxThread = int(itemJson['totalRow']) - itemIndex
-    
-        with ThreadPoolExecutor(maxThread) as t2:    
-            for j in range(itemIndex,itemIndex + maxThread):
-                threadArgs['imagedict'] = itemJson['list'][int(itemJson['totalRow']) - j]
-                t2.submit(self.downSignalImage, threadArgs)
+        self.downListInfo["info"][self.updateItemNames['name']] = len(itemJson['list'])
+        for curitem in itemJson['list'][::-1][itemIndex:]:
+            maxThread = len(curitem['imagelist'].split(','))
+            with ThreadPoolExecutor(maxThread) as t2:
+                threadArgs['title'] = curitem['title']
+                for imageUrl in curitem['imagelist'].split(','):
+                    threadArgs['imageUrl'] = imageUrl
+                    threadArgs['index'] = curitem['imagelist'].split(',').index(imageUrl)
+                    log.debug("title:{0} index:{1}",threadArgs['title'],threadArgs['index'])                 
+                    t2.submit(self.downSignalImage, threadArgs)
+            timeout = time.time()
+            while self.itemDownCount != maxThread and time.time() - timeout < 10:
+                pass
+            self.itemDownCount = 0
+        
                 
     def threadDownDpic(self,threadArgs):
         index = threadArgs['index']        
@@ -191,11 +207,8 @@ class spider(threading.Thread):
             listTitle.append(i['title'])
         self.savaTitle(listTitle,title)
     def threadDownUrl(self,threadArgs):
-    
         cartoonInfo = threadArgs['dictJson']
-        log.debug("id = {0}",cartoonInfo['id'])
         dpicSrc = "https://www.a4d26.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],'1')
-        # log.info(dpicSrc)
         try:
             rpy = requests.get(dpicSrc).text        
         except:
@@ -206,10 +219,16 @@ class spider(threading.Thread):
         itemLen = json.loads(rpy)['result']['totalRow']        
         dpicSrc = "https://www.a4d26.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],str(itemLen))
         rpy = requests.get(dpicSrc).text
-        self.saveTitleForJson(rpy,cartoonInfo['title'])
-        self.savaUrl(rpy,cartoonInfo['title'],'static/url/')        
+        cartoonInfo['title']
+        try:
+            simplified_text  = self.converter.convert(cartoonInfo['title'])
+        except:
+            simplified_text  = cartoonInfo['title']
+            log.warning("t2s convert false {0}",simplified_text)
+        self.saveTitleForJson(rpy,simplified_text)
+        self.savaUrl(rpy,simplified_text,'static/url/')
         self.itemDownCount += 1
-        log.debug("{0}:{1}",cartoonInfo['title'],self.itemDownCount)
+        log.debug("{0}:{1}",simplified_text,self.itemDownCount)
         pass
 # down url
     def downUrl(self):
@@ -227,9 +246,13 @@ class spider(threading.Thread):
                     except:
                         break
                     t2.submit(self.threadDownUrl, threadArgs)
+            timeout = time.time()
             while True:
                 if self.itemDownCount == i + 100 or self.itemDownCount == len(self.jsonRpy['item']):
                     log.debug("had down a cycle:{0}",self.itemDownCount)
+                    break
+                if time.time() - timeout > 10:
+                    log.warning("had down a cycle timeout")
                     break
     def getAllItemJson(self):
         itemCurIndex = 1
@@ -246,21 +269,42 @@ class spider(threading.Thread):
             if rpy['result']['lastPage'] == True:
                 break
         log.info(len(self.jsonRpy['item']))
+        directory = os.path.dirname("static/item.json")
+        if not os.path.exists(directory):
+            os.makedirs(directory)        
         with open('static/item.json','w') as ff:
             ff.write(json.dumps(self.jsonRpy))
         log.info("had down save item json :{0}",len(self.jsonRpy['item']))
             
-
+    def hadDownImageList(self):
+        directory = os.path.dirname("static/downList.json")
+        if not os.path.exists(directory):
+            os.makedirs(directory)  
+        try:
+            log.info(self.downListInfo["info"])
+        except:
+            if not os.path.exists('static/downList.json'):
+                self.downListInfo = {"info":{self.updateItemNames['name']:0}}
+            else:
+                with open('static/downList.json','r') as file:
+                    rpy = file.read()            
+                    self.downListInfo = json.loads(rpy)
+                    self.downListInfo["info"][self.updateItemNames['name']] = 0
+        
+        with open('static/downList.json','w') as ff:
+            ff.write(json.dumps(self.downListInfo))
     def run(self):
         if self.cmd == 0:
             self.getAllItemJson()
         if self.cmd == 1:
             self.downdpicImg()
         if self.cmd == 2:
-            if len(self.updateItemNames) == 0:
+            self.hadDownImageList()
+            if self.updateItemNames["index"] == -1:
                 self.downItemImage()
             else:
                 self.downSignalItemImage()
+            self.hadDownImageList()
         if self.cmd == 3:
             self.downUrl()
         log.info("update&down finish")
@@ -274,10 +318,10 @@ class spider(threading.Thread):
     # print(rpy['result']['list'][0])
 
 # https://www.a8b77.com/home/api/chapter_list/tp/1251-0-1-30
-# if __name__ == '__main__':
-#     # homeURL= 'https://www.a8b77.com/home/api/cate/tp/1-0-2-1-2'
-#     homeURL= 'https://www.a8b77.com/home/api/chapter_list/tp/1251-0-1-30'
-#     thread1 = spider(homeURL,update = True,itemNames = {"name":'小巷裡的秘密 ',"index":10},isSaveHtml = True,cmd=2)
-#     thread1.start()
-#     thread1.join()
-#     log.info("退出主线程")
+if __name__ == '__main__':
+    # homeURL= 'https://www.a8b77.com/home/api/cate/tp/1-0-2-1-2'
+    homeURL= 'https://www.a8b77.com/home/api/chapter_list/tp/1251-0-1-30'
+    thread1 = spider(homeURL,update = True,itemNames = {"name":'高跟鞋',"index":20},isSaveHtml = True,cmd=2)
+    thread1.start()
+    thread1.join()
+    log.info("退出主线程")
