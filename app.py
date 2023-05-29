@@ -71,7 +71,7 @@ def readLocalImg(name,itemName):
             break
     print(imgList)
 
-homeURL= ''
+homeURL= 'http://www.a8b77.com/'
 
 downLoadItemDict = {"":""}
 def downLoadItem(item,index = -1):
