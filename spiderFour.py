@@ -11,7 +11,7 @@ from datetime import date,timedelta,datetime
 import json
 import opencc
 class spider(threading.Thread):
-    homeUrl = 'https://www.wshm.cc/'
+    # homeUrl = 'http://www.a8b77.com/'
     homeHtml = ''
     index = 0
     basePathUrl = 'https://img.pic-server.com/'
@@ -29,7 +29,13 @@ class spider(threading.Thread):
         self.isSaveHtml = isSaveHtml
         self.cmd = cmd
         self.catalogue = catalogue
-        log.debug(self.nowDate)        
+        self.getNewUrl()
+        log.debug(self.nowDate)
+    def getNewUrl(self):
+        orihtml = requests.get(self.homeUrl).text
+        oriUrl = orihtml.split('http://www.')
+        self.nowHtml = 'http://www.' + oriUrl[1].split('/')[0]        
+        log.debug(self.nowHtml)
     def downImage(self,url,name,path,imgType = '.jpg'):
         if os.path.exists( path + name + imgType):
             log.info('image:{0} had down \n',name)
@@ -209,7 +215,7 @@ class spider(threading.Thread):
         self.savaTitle(listTitle,title)
     def threadDownUrl(self,threadArgs):
         cartoonInfo = threadArgs['dictJson']
-        dpicSrc = "https://www.4a468.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],'1')
+        dpicSrc = self.nowHtml + "/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],'1')
         try:
             rpy = requests.get(dpicSrc).text        
         except:
@@ -218,7 +224,7 @@ class spider(threading.Thread):
             return
         # log.info(rpy)
         itemLen = json.loads(rpy)['result']['totalRow']        
-        dpicSrc = "https://www.4a468.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],str(itemLen))
+        dpicSrc = self.nowHtml + "/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],str(itemLen))
         rpy = requests.get(dpicSrc).text
         cartoonInfo['title']
         try:
@@ -257,7 +263,7 @@ class spider(threading.Thread):
                     break
     def getAllItemJson(self):
         itemCurIndex = 1
-        originHttp = 'https://www.4a468.com/home/api/cate/tp/1-0-2-1-{0}'
+        originHttp = self.nowHtml + '/home/api/cate/tp/1-0-2-1-{0}'
         
         while True:
             nowhttp = originHttp.format(str(itemCurIndex))
@@ -319,10 +325,9 @@ class spider(threading.Thread):
     # print(rpy['result']['list'][0])
 
 # https://www.a8b77.com/home/api/chapter_list/tp/1251-0-1-30
-# if __name__ == '__main__':
-    # # homeURL= 'https://www.a8b77.com/home/api/cate/tp/1-0-2-1-2'
-    # homeURL= 'https://www.a8b77.com/home/api/chapter_list/tp/1251-0-1-30'
-    # thread1 = spider(homeURL,update = True,itemNames = {"name":'高跟鞋',"index":20},isSaveHtml = True,cmd=1)
-    # thread1.start()
-    # thread1.join()        
-    # log.info("退出主线程")
+if __name__ == '__main__':
+    homeURL= 'http://www.a8b77.com/'
+    thread1 = spider(homeURL,update = True,itemNames = {"name":'高跟鞋',"index":20},isSaveHtml = True,cmd=2)
+    thread1.start()
+    thread1.join()
+    log.info("退出主线程")
