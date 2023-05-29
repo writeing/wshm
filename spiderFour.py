@@ -170,9 +170,10 @@ class spider(threading.Thread):
         # if not os.path.exists('static/dpic/' + cartoonInfo['title']):
         #     os.mkdir('static/dpic/' + cartoonInfo['title'])
         dpicSrc = "https://cdn.ifs7gsd2f.com" + cartoonInfo['image']
-        rpy = self.downImage(dpicSrc,cartoonInfo['title'],'static/dpic/')
+        
+        rpy = self.downImage(dpicSrc,self.converter.convert(cartoonInfo['title']),'static/dpic/')
         self.dhcpDownCount += 1
-        log.debug("{0}--{1}:{2}:{3}",index,cartoonInfo['title'],rpy,self.dhcpDownCount)
+        log.debug("{0}--{1}:{2}:{3}",index,self.converter.convert(cartoonInfo['title']),rpy,self.dhcpDownCount)
         pass
     def loadSaveJson(self):
         with open('static/item.json','r') as file:
@@ -208,7 +209,7 @@ class spider(threading.Thread):
         self.savaTitle(listTitle,title)
     def threadDownUrl(self,threadArgs):
         cartoonInfo = threadArgs['dictJson']
-        dpicSrc = "https://www.a4d26.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],'1')
+        dpicSrc = "https://www.4a468.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],'1')
         try:
             rpy = requests.get(dpicSrc).text        
         except:
@@ -217,7 +218,7 @@ class spider(threading.Thread):
             return
         # log.info(rpy)
         itemLen = json.loads(rpy)['result']['totalRow']        
-        dpicSrc = "https://www.a4d26.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],str(itemLen))
+        dpicSrc = "https://www.4a468.com/home/api/chapter_list/tp/{0}-0-1-{1}".format(cartoonInfo['id'],str(itemLen))
         rpy = requests.get(dpicSrc).text
         cartoonInfo['title']
         try:
@@ -256,7 +257,7 @@ class spider(threading.Thread):
                     break
     def getAllItemJson(self):
         itemCurIndex = 1
-        originHttp = 'https://www.a4d26.com/home/api/cate/tp/1-0-2-1-{0}'
+        originHttp = 'https://www.4a468.com/home/api/cate/tp/1-0-2-1-{0}'
         
         while True:
             nowhttp = originHttp.format(str(itemCurIndex))
@@ -318,10 +319,10 @@ class spider(threading.Thread):
     # print(rpy['result']['list'][0])
 
 # https://www.a8b77.com/home/api/chapter_list/tp/1251-0-1-30
-if __name__ == '__main__':
-    # homeURL= 'https://www.a8b77.com/home/api/cate/tp/1-0-2-1-2'
-    homeURL= 'https://www.a8b77.com/home/api/chapter_list/tp/1251-0-1-30'
-    thread1 = spider(homeURL,update = True,itemNames = {"name":'高跟鞋',"index":20},isSaveHtml = True,cmd=2)
-    thread1.start()
-    thread1.join()
-    log.info("退出主线程")
+# if __name__ == '__main__':
+    # # homeURL= 'https://www.a8b77.com/home/api/cate/tp/1-0-2-1-2'
+    # homeURL= 'https://www.a8b77.com/home/api/chapter_list/tp/1251-0-1-30'
+    # thread1 = spider(homeURL,update = True,itemNames = {"name":'高跟鞋',"index":20},isSaveHtml = True,cmd=1)
+    # thread1.start()
+    # thread1.join()        
+    # log.info("退出主线程")

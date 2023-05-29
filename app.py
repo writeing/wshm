@@ -6,12 +6,11 @@ import re
 from spiderFour import spider
 import threading
 from loguru import logger as log
+import json
 app = Flask(__name__)
 
 
 movies = {}
-
-
 def readLocalFile(direct = ''):
     global movies
     movies = {}
@@ -30,6 +29,22 @@ def readLocalFile(direct = ''):
     for names in dpicFileNames:
         name = re.split('\.',names)[0]
         movies[name] = names
+def readHadDownFile():
+    global movies
+    movies = {}
+    ImagePath = 'static/downList.json'
+    imageinfo = 1
+    dpicPath = 'static/dpic/'
+    dpicFileNames = os.listdir(dpicPath)
+    with open(ImagePath,'r') as file:
+        temp = file.read()        
+        imageinfo = json.loads(temp)
+    for imageitem in imageinfo["info"].keys():
+        name = imageitem
+        for oriName in dpicFileNames:
+            if name in oriName: 
+                movies[name] = oriName
+    log.debug(movies)     
 sg_items = []
 def readLocalTitle(name):
     global sg_items
@@ -114,6 +129,10 @@ def buttonExec(request):
             downLoadcmd(0) # update all item
         elif (bt_name == '更新主页面'):
             downLoadInit()  # update all json            
+        elif (bt_name == 'all'):
+            readLocalFile()  # update all json  
+        elif (bt_name == 'haddown'):
+            readHadDownFile()  # update all json                          
         else:
             try:
                 print(bt_name)
@@ -125,11 +144,10 @@ def buttonExec(request):
 @app.route('/',methods=['POST', 'GET'])
 def rootHome():
     global historyList,downLoadItemDict
-    # if len(historyList) == 0:
-    #     historyList = downLoadInit()
+    if len(movies) == 0:
+        readLocalFile('')
     buttonExec(request)
-    readLocalFile('')
-    return render_template('index.html',name = 'four',movies=movies,historyList = historyList,downItemDict = downLoadItemDict )
+    return render_template('index.html',name = 'four',movies=movies,downItemDict = downLoadItemDict )
 
 @app.route('/user/<name>')
 def user_page(name):
